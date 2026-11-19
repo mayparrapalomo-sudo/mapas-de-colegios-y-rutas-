@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rutas a los colegios - Girardot</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Arial,sans-serif;background:#f1f4f6;color:#17202a}
+header{background:#123b5d;color:#fff;padding:16px 20px}
+header h1{margin:0;font-size:23px}
+header p{margin:5px 0 0;opacity:.85;font-size:14px}
+.wrap{max-width:1350px;margin:auto;padding:14px}
+.main{display:grid;grid-template-columns:390px 1fr;gap:14px;align-items:start}
+.card{background:#fff;border-radius:12px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.14);overflow:hidden}
+.title{padding:13px 14px;font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.title small{font-weight:400;color:#5d6b78}
+.pad{padding:0 14px 14px}
+.scroll{overflow-x:auto}
+label.l{display:block;font-size:12px;font-weight:700;color:#5d6b78;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.03em}
+select,input[type=text]{padding:10px;border-radius:8px;border:1px solid #ccd3d9;font-size:15px;width:100%;background:#fff}
+.row{display:flex;gap:8px}
+button.b{padding:10px 14px;border-radius:8px;border:none;background:#123b5d;color:#fff;font-size:14px;cursor:pointer;white-space:nowrap}
+button.b.alt{background:#e8590c}
+button.b.ghost{background:#eaf0f4;color:#123b5d}
+button.b.full{width:100%;padding:13px;font-size:16px;margin-top:12px}
+.modes{display:flex;gap:6px;margin-top:4px}
+.modes button{flex:1;padding:9px;border:1px solid #ccd3d9;background:#fff;border-radius:8px;cursor:pointer;font-size:14px}
+.modes button.on{background:#123b5d;color:#fff;border-color:#123b5d}
+#map{height:calc(100vh - 150px);min-height:520px;border-radius:12px;position:sticky;top:10px}
+.alt-card{border:2px solid #dde3e8;border-radius:10px;padding:10px 12px;margin-top:8px;cursor:pointer}
+.alt-card.on{border-color:#1565c0;background:#eaf2fb}
+.alt-card .t{font-size:20px;font-weight:700}
+.alt-card .s{color:#5d6b78;font-size:13px}
+.badge{display:inline-block;background:#1b8a3a;color:#fff;border-radius:6px;font-size:11px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.badge.g{background:#7a8896}
+.steps{list-style:none;margin:8px 0 0;padding:0;max-height:300px;overflow:auto}
+.steps li{display:flex;gap:10px;padding:9px 4px;border-bottom:1px solid #e6ebef;cursor:pointer;font-size:14px}
+.steps li:hover{background:#f3f7f9}
+.steps .ic{width:26px;text-align:center;font-size:18px}
+.steps .d{margin-left:auto;color:#5d6b78;white-space:nowrap}
+.links a{display:inline-block;margin:10px 8px 0 0;padding:8px 12px;border-radius:8px;background:#eaf0f4;color:#123b5d;text-decoration:none;font-size:14px;font-weight:600}
+.msg{margin-top:10px;padding:10px;border-radius:8px;background:#fff4e5;font-size:14px}
+.msg.ok{background:#eaf0f4}
+.chk{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:14px;margin-top:6px}
+.chk label{display:flex;gap:6px;align-items:center}
+.pin{width:30px;height:30px;border-radius:50%;background:#123b5d;color:#fff;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.5);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.pin.dest{background:#e8590c;transform:scale(1.25)}
+.pin.a{background:#1b8a3a;border-radius:8px}
+.dist{background:#fff;border:2px solid #e8590c;border-radius:10px;padding:1px 7px;font-weight:700;font-size:12px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3);width:max-content;transform:translate(-50%,-50%)}
+.pop button{margin:3px 3px 0 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid #e1e6ea;text-align:left;white-space:nowrap}
+th{background:#eaf0f4}
+tr.click{cursor:pointer}tr.click:hover td{background:#f3f7f9}
+.matrix td,.matrix th{text-align:center;padding:7px 8px;font-size:13px}
+.matrix td:first-child,.matrix th:first-child{text-align:left;position:sticky;left:0;background:#fff}
+.matrix td.me{background:#eef2f4;color:#889}
+.matrix td.sel{background:#e8590c;color:#fff;font-weight:700}
+@media(max-width:900px){.main{grid-template-columns:1fr}#map{height:60vh;min-height:420px;position:relative;order:-1}}
+</style>
+</head>
+<body>
+<header>
+<h1>Rutas a los colegios de Girardot</h1>
+<p>Elige de dónde sales y a qué colegio vas: te muestra la mejor ruta, alternativas, tiempo y las indicaciones paso a paso.</p>
+</header>
+<div class="wrap">
+<div class="main">
+
+<div>
+<div class="card">
+<div class="title">Planificar ruta</div>
+<div class="pad">
+<label class="l">Origen</label>
+<select id="origen"></select>
+<div class="row" style="margin-top:8px">
+<input type="text" id="dir" placeholder="o escribe una dirección o lugar">
+<button class="b ghost" id="bDir">Buscar</button>
+</div>
+<div class="row" style="margin-top:8px">
+<button class="b ghost" style="flex:1" id="bGps">📍 Mi ubicación</button>
+<button class="b ghost" style="flex:1" id="bMapa">🖱️ Elegir en el mapa</button>
+</div>
+<div id="origTxt" class="msg ok" style="display:none"></div>
+
+<label class="l">Destino (colegio)</label>
+<select id="destino"></select>
+
+<label class="l">Cómo vas</label>
+<div class="modes" id="modes">
+<button data-m="car" class="on">🚗 Carro</button>
+<button data-m="bike">🚲 Bicicleta</button>
+<button data-m="foot">🚶 A pie</button>
+</div>
+
+<button class="b alt full" id="bRuta">Buscar la mejor ruta</button>
+<div id="rutas"></div>
+<div id="pasos"></div>
+</div>
+</div>
+
+<div class="card">
+<div class="title">Recorrido con varias paradas <small>ordena los colegios por la ruta más corta</small></div>
+<div class="pad">
+<div class="chk" id="chk"></div>
+<button class="b full" id="bTrip">Calcular el mejor orden</button>
+<div id="tripRes"></div>
+</div>
+</div>
+</div>
+
+<div id="map"></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<div class="title">Distancias en línea recta <small id="fanInfo">Toca un colegio en el mapa y elige «Ver distancias»</small></div>
+<div class="pad scroll"><table><tbody id="lista"></tbody></table></div>
+</div>
+
+<div class="card">
+<div class="title">Matriz de distancias entre todos los colegios <small>km en línea recta</small></div>
+<div class="pad scroll"><table class="matrix" id="matriz"></table></div>
+</div>
+
+<div class="card">
+<div class="title">Datos de los colegios</div>
+<div class="pad scroll"><table>
+<thead><tr><th>N.º</th><th>Colegio</th><th>Distancia (dato original)</th></tr></thead>
+<tbody id="tabla"></tbody></table></div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>if(typeof L==="undefined"){document.write('<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"><\/script>')}</script>
+<script>
+if(typeof L==="undefined"){
+document.getElementById("map").innerHTML='<p style="padding:24px;font-size:16px">No se pudo cargar el mapa. Abre esta página en tu navegador con conexión a internet.</p>';
+throw new Error("Leaflet no cargó");
+}
+</script>
+<script>
+/* Edita aquí nombres, coordenadas o distancias */
+const colegios=[
+{id:2,nombre:"Francisco Manzanera",distancia:3.10,lat:4.3035,lng:-74.8020},
+{id:5,nombre:"Nuevo Horizonte",distancia:3.09,lat:4.3010,lng:-74.7990},
+{id:9,nombre:"La Presentación",distancia:3.00,lat:4.3060,lng:-74.8030},
+{id:11,nombre:"N.S. del Pilar",distancia:2.80,lat:4.2980,lng:-74.8050},
+{id:6,nombre:"American College",distancia:2.73,lat:4.3000,lng:-74.8080},
+{id:3,nombre:"Fundadores",distancia:2.33,lat:4.3050,lng:-74.7970},
+{id:8,nombre:"Liceo Moderno",distancia:1.94,lat:4.3100,lng:-74.8000},
+{id:10,nombre:"Formar Innovar",distancia:1.73,lat:4.3070,lng:-74.7950},
+{id:7,nombre:"N.S. de Guadalupe",distancia:1.21,lat:4.3040,lng:-74.8090},
+{id:1,nombre:"Atanasio Girardot",distancia:1.03,lat:4.3110,lng:-74.8060},
+{id:4,nombre:"Policarpa Salavarrieta",distancia:0.14,lat:4.2990,lng:-74.8110}
+];
+const byId=Object.fromEntries(colegios.map(c=>[c.id,c]));
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString("es-CO",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtM=km=>km<1?Math.round(km*1000)+" m":fmt(km)+" km";
+const fmtT=s=>{const m=Math.round(s/60);return m<60?Math.max(1,m)+" min":Math.floor(m/60)+" h "+(m%60)+" min"};
+const hav=(a,b)=>{const R=6371,r=Math.PI/180,dl=(b.lat-a.lat)*r,dg=(b.lng-a.lng)*r;
+const h=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+
+/* ===== Mapa ===== */
+const calles=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"&copy; OpenStreetMap contributors &copy; CARTO"});
+const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"});
+const esriCalles=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"&copy; Esri"});
+const satelite=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imágenes &copy; Esri"});
+const map=L.map("map",{layers:[calles]});
+L.control.layers({"Calles":calles,"Calles (Esri)":esriCalles,"OpenStreetMap":osm,"Satélite":satelite}).addTo(map);
+let _tf=0;calles.on("tileerror",()=>{if(++_tf===4&&map.hasLayer(calles)){map.removeLayer(calles);esriCalles.addTo(map)}});
+let _ok=false;[calles,osm,esriCalles,satelite].forEach(l=>l.on("tileload",()=>{_ok=true}));
+setTimeout(()=>{if(_ok)return;const d=document.createElement("div");
+d.style.cssText="position:absolute;z-index:1000;left:50%;top:14px;transform:translateX(-50%);width:min(92%,460px);background:#fff4e5;border:2px solid #e8590c;border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.45;box-shadow:0 2px 10px rgba(0,0,0,.3)";
+d.innerHTML="<b>El mapa de fondo no se pudo cargar.</b><br>Si estás viendo esta página dentro de Claude (vista previa o enlace publicado), ahí se bloquean los mapas. Descarga el archivo y ábrelo en tu navegador, o súbelo a GitHub Pages. También revisa que tengas internet.";
+map.getContainer().appendChild(d)},6000);
+L.control.scale({imperial:false}).addTo(map);
+map.fitBounds(colegios.map(c=>[c.lat,c.lng]),{padding:[50,50]});
+const fanL=L.layerGroup().addTo(map),routeL=L.layerGroup().addTo(map),tripL=L.layerGroup().addTo(map);
+
+let orig=null,origMk=null,destId=null,fanId=null,modo="car",rutas=[],rIdx=0,pickingOrigin=false;
+
+colegios.forEach(c=>{
+c.m=L.marker([c.lat,c.lng],{icon:L.divIcon({className:"",html:`<div class="pin" id="pin${c.id}">${c.id}</div>`,iconSize:[30,30],iconAnchor:[15,15]})}).addTo(map);
+c.m.bindTooltip(c.nombre,{direction:"top",offset:[0,-14]});
+c.m.bindPopup(`<b>${c.nombre}</b><div class="pop">
+<button class="b alt" onclick="irA(${c.id})">Ir aquí</button>
+<button class="b" onclick="salirDe(${c.id})">Salir de aquí</button>
+<button class="b ghost" onclick="verDist(${c.id})">Ver distancias</button></div>`);
+});
+
+/* ===== Selects ===== */
+$("origen").innerHTML=`<option value="">Seleccione un colegio de origen…</option>`+colegios.map(c=>`<option value="${c.id}">${c.id} - ${c.nombre}</option>`).join("");
+$("destino").innerHTML=`<option value="">Seleccione el colegio de destino…</option>`+colegios.map(c=>`<option value="${c.id}">${c.id} - ${c.nombre}</option>`).join("");
+$("chk").innerHTML=colegios.map(c=>`<label><input type="checkbox" value="${c.id}"> ${c.id} - ${c.nombre}</label>`).join("");
+$("origen").onchange=e=>{if(e.target.value)salirDe(Number(e.target.value))};
+$("destino").onchange=e=>{destId=Number(e.target.value)||null;marcar()};
+
+function marcar(){colegios.forEach(c=>$("pin"+c.id)?.classList.toggle("dest",c.id===destId))}
+window.irA=id=>{destId=id;$("destino").value=id;marcar();map.closePopup();if(orig)buscarRuta()};
+window.salirDe=id=>{const c=byId[id];setOrigen(c.lat,c.lng,c.nombre);$("origen").value=id;map.closePopup()};
+window.verDist=id=>{fanId=id;map.closePopup();abanico()};
+
+function setOrigen(lat,lng,txt){
+orig={lat,lng,txt};
+if(origMk)map.removeLayer(origMk);
+origMk=L.marker([lat,lng],{icon:L.divIcon({className:"",html:`<div class="pin a">A</div>`,iconSize:[30,30],iconAnchor:[15,15]})}).addTo(map).bindTooltip("Origen: "+txt);
+$("origTxt").style.display="block";$("origTxt").textContent="Origen: "+txt;
+if(destId)buscarRuta()}
+
+/* Origen: mi ubicación, mapa y dirección */
+$("bGps").onclick=()=>{
+if(!navigator.geolocation){alert("Tu navegador no permite ubicación.");return}
+navigator.geolocation.getCurrentPosition(p=>{setOrigen(p.coords.latitude,p.coords.longitude,"Mi ubicación");$("origen").value="";map.setView([p.coords.latitude,p.coords.longitude],15)},
+()=>alert("No se pudo obtener tu ubicación. Revisa el permiso del navegador."),{enableHighAccuracy:true,timeout:10000})};
+$("bMapa").onclick=()=>{pickingOrigin=true;$("bMapa").textContent="Toca el mapa…";map.getContainer().style.cursor="crosshair"};
+map.on("click",e=>{if(!pickingOrigin)return;pickingOrigin=false;map.getContainer().style.cursor="";$("bMapa").textContent="🖱️ Elegir en el mapa";
+setOrigen(e.latlng.lat,e.latlng.lng,"Punto en el mapa");$("origen").value=""});
+async function buscarDir(){
+const q=$("dir").value.trim();if(!q)return;
+$("bDir").textContent="…";
+try{
+const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q+", Girardot, Cundinamarca, Colombia"));
+const j=await r.json();
+if(!j.length){alert("No encontré esa dirección. Prueba con otro nombre o elige el punto en el mapa.");return}
+setOrigen(Number(j[0].lat),Number(j[0].lon),q);$("origen").value="";map.setView([j[0].lat,j[0].lon],16);
+}catch(e){alert("No se pudo buscar la dirección (se necesita internet).")}
+finally{$("bDir").textContent="Buscar"}}
+$("bDir").onclick=buscarDir;$("dir").addEventListener("keydown",e=>{if(e.key==="Enter")buscarDir()});
+
+$("modes").onclick=e=>{const b=e.target.closest("button");if(!b)return;modo=b.dataset.m;
+[...$("modes").children].forEach(x=>x.classList.toggle("on",x===b));if(orig&&destId)buscarRuta()};
+
+/* ===== Servicio de rutas (OSRM) ===== */
+const BASES={car:["https://routing.openstreetmap.de/routed-car","https://router.project-osrm.org"],bike:["https://routing.openstreetmap.de/routed-bike"],foot:["https://routing.openstreetmap.de/routed-foot"]};
+async function osrm(path){
+let err;
+for(const b of BASES[modo]){try{const r=await fetch(b+path);const j=await r.json();if(j.code==="Ok")return j;err=j.code}catch(e){err=e}}
+throw err}
+
+/* Indicaciones en español */
+const MOD={left:"a la izquierda",right:"a la derecha","slight left":"levemente a la izquierda","slight right":"levemente a la derecha","sharp left":"cerrado a la izquierda","sharp right":"cerrado a la derecha",straight:"recto",uturn:"para devolverte"};
+function paso(s){
+const m=s.maneuver,n=s.name?" por "+s.name:"",mod=MOD[m.modifier]||"";
+let t="",ic="⬆️";
+switch(m.type){
+case"depart":t="Sal"+n;ic="🚩";break;
+case"arrive":t="Llegaste a tu destino";ic="🏁";break;
+case"roundabout":case"rotary":case"roundabout turn":t="En la rotonda toma la salida "+(m.exit||"")+n;ic="🔄";break;
+case"merge":t="Incorpórate "+mod+n;ic="↗️";break;
+case"fork":t="Toma el desvío "+mod+n;ic="🔀";break;
+case"end of road":t="Al final de la vía gira "+mod+n;ic=m.modifier&&m.modifier.includes("left")?"⬅️":"➡️";break;
+case"new name":case"continue":t=(m.modifier==="straight"||!m.modifier?"Continúa":"Continúa "+mod)+n;break;
+default:t="Gira "+mod+n;ic=m.modifier&&m.modifier.includes("left")?"⬅️":m.modifier&&m.modifier.includes("right")?"➡️":m.modifier==="uturn"?"↩️":"⬆️"}
+if(m.modifier==="uturn"&&m.type!=="arrive")t="Da la vuelta"+n,ic="↩️";
+return{t,ic}}
+
+async function buscarRuta(){
+if(!orig){$("rutas").innerHTML=`<div class="msg">Primero elige el origen.</div>`;return}
+if(!destId){$("rutas").innerHTML=`<div class="msg">Elige el colegio de destino.</div>`;return}
+const d=byId[destId];
+$("rutas").innerHTML=`<div class="msg ok">Buscando la mejor ruta…</div>`;$("pasos").innerHTML="";
+routeL.clearLayers();tripL.clearLayers();
+try{
+const j=await osrm(`/route/v1/driving/${orig.lng},${orig.lat};${d.lng},${d.lat}?alternatives=true&steps=true&overview=full&geometries=geojson`);
+rutas=j.routes;rIdx=0;pintarRutas();mostrarRutas();
+}catch(e){$("rutas").innerHTML=`<div class="msg">No se pudo calcular la ruta. Revisa tu conexión a internet o prueba con otro origen.</div>`}}
+$("bRuta").onclick=buscarRuta;
+
+function pintarRutas(){
+routeL.clearLayers();
+const orden=rutas.map((_,i)=>i).filter(i=>i!==rIdx).concat(rIdx);
+orden.forEach(i=>{const on=i===rIdx;
+const pl=L.geoJSON(rutas[i].geometry,{style:{color:on?"#1565c0":"#8a97a4",weight:on?8:6,opacity:on?.95:.7}}).addTo(routeL);
+pl.on("click",()=>{rIdx=i;pintarRutas();mostrarRutas()})});
+map.fitBounds(L.geoJSON(rutas[rIdx].geometry).getBounds(),{padding:[60,60]})}
+
+function mostrarRutas(){
+const d=byId[destId],lin=hav(orig,d);
+$("rutas").innerHTML=rutas.map((r,i)=>`<div class="alt-card ${i===rIdx?"on":""}" data-i="${i}">
+<div class="t">${fmtT(r.duration)}<span class="badge ${i?"g":""}">${i?"Alternativa":"La más rápida"}</span></div>
+<div class="s">${fmtM(r.distance/1000)} por la vía · ${fmtM(lin)} en línea recta</div></div>`).join("")+
+`<div class="links"><a target="_blank" rel="noopener" href="https://waze.com/ul?ll=${d.lat},${d.lng}&navigate=yes">Abrir en Waze</a><a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&origin=${orig.lat},${orig.lng}&destination=${d.lat},${d.lng}&travelmode=${modo==="car"?"driving":modo==="bike"?"bicycling":"walking"}">Abrir en Google Maps</a></div>`;
+const st=rutas[rIdx].legs.flatMap(l=>l.steps);
+$("pasos").innerHTML=`<label class="l">Indicaciones paso a paso</label><ul class="steps">`+st.map((s,k)=>{const p=paso(s);
+return `<li data-k="${k}"><span class="ic">${p.ic}</span><span>${p.t}</span><span class="d">${s.distance?fmtM(s.distance/1000):""}</span></li>`}).join("")+"</ul>";
+$("pasos")._st=st}
+$("rutas").onclick=e=>{const c=e.target.closest(".alt-card");if(!c)return;rIdx=Number(c.dataset.i);pintarRutas();mostrarRutas()};
+$("pasos").onclick=e=>{const li=e.target.closest("li");if(!li)return;const s=$("pasos")._st[li.dataset.k];
+map.setView([s.maneuver.location[1],s.maneuver.location[0]],18)};
+
+/* ===== Varias paradas ===== */
+$("bTrip").onclick=async()=>{
+const ids=[...document.querySelectorAll("#chk input:checked")].map(x=>Number(x.value));
+const pts=[];
+if(orig)pts.push({n:"Origen: "+orig.txt,lat:orig.lat,lng:orig.lng});
+ids.forEach(i=>pts.push({n:byId[i].nombre,lat:byId[i].lat,lng:byId[i].lng}));
+if(pts.length<2){$("tripRes").innerHTML=`<div class="msg">Marca al menos 2 colegios (o elige un origen y marca 1).</div>`;return}
+$("tripRes").innerHTML=`<div class="msg ok">Calculando el mejor orden…</div>`;
+routeL.clearLayers();tripL.clearLayers();
+try{
+const co=pts.map(p=>p.lng+","+p.lat).join(";");
+const r=await fetch(`https://router.project-osrm.org/trip/v1/driving/${co}?roundtrip=false&source=first&geometries=geojson&overview=full`);
+const j=await r.json();if(j.code!=="Ok")throw j.code;
+const ord=j.waypoints.map((w,i)=>({i,o:w.waypoint_index})).sort((a,b)=>a.o-b.o).map(x=>pts[x.i]);
+const t=j.trips[0];
+L.geoJSON(t.geometry,{style:{color:"#1b8a3a",weight:7,opacity:.9}}).addTo(tripL);
+ord.forEach((p,k)=>L.marker([p.lat,p.lng],{interactive:false,icon:L.divIcon({className:"",html:`<div class="dist" style="transform:translate(-50%,-150%)">${k+1}</div>`,iconSize:[0,0]})}).addTo(tripL));
+map.fitBounds(L.geoJSON(t.geometry).getBounds(),{padding:[60,60]});
+$("tripRes").innerHTML=`<div class="msg ok"><b>${fmtM(t.distance/1000)}</b> · ${fmtT(t.duration)} en carro<ol style="margin:8px 0 0;padding-left:20px">${ord.map(p=>`<li>${p.n}</li>`).join("")}</ol></div>`;
+}catch(e){$("tripRes").innerHTML=`<div class="msg">No se pudo calcular el recorrido. Revisa tu conexión.</div>`}};
+
+/* ===== Distancias en línea recta ===== */
+function abanico(){
+fanL.clearLayers();
+if(!fanId){$("lista").innerHTML="";return}
+const a=byId[fanId];
+colegios.forEach(b=>{if(b.id===fanId)return;
+L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{color:"#e8590c",weight:2,dashArray:"6 6",interactive:false}).addTo(fanL);
+L.marker([(a.lat+b.lat)/2,(a.lng+b.lng)/2],{interactive:false,icon:L.divIcon({className:"",html:`<div class="dist">${fmtM(hav(a,b))}</div>`,iconSize:[0,0]})}).addTo(fanL)});
+$("fanInfo").textContent="Desde "+a.nombre;
+$("lista").innerHTML=colegios.filter(c=>c.id!==fanId).map(c=>({c,d:hav(a,c)})).sort((p,q)=>p.d-q.d)
+.map(({c,d})=>`<tr class="click" data-d="${c.id}"><td>${c.id} - ${c.nombre}</td><td>${fmt(d)} km</td></tr>`).join("");
+matriz()}
+$("lista").addEventListener("click",e=>{const r=e.target.closest("[data-d]");if(r){destId=Number(r.dataset.d);$("destino").value=destId;marcar();salirDe(fanId)}});
+function matriz(){
+$("matriz").innerHTML="<thead><tr><th>Colegio</th>"+colegios.map(c=>`<th>${c.id}</th>`).join("")+"</tr></thead><tbody>"+
+colegios.map(a=>`<tr><td><b>${a.id}</b> ${a.nombre}</td>`+colegios.map(b=>a.id===b.id?`<td class="me">–</td>`:`<td class="${a.id===fanId?"sel":""}">${fmt(hav(a,b))}</td>`).join("")+"</tr>").join("")+"</tbody>"}
+$("tabla").innerHTML=colegios.map(c=>`<tr><td>${c.id}</td><td>${c.nombre}</td><td>${fmt(c.distancia)} km</td></tr>`).join("");
+matriz();
+</script>
+</body>
+</html>
